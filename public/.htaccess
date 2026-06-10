@@ -1,76 +1,32 @@
-# ═══════════════════════════════════════════════════════════
-#  RevTrailMed — Apache configuration
-#  Entry point is index.php (security wrapper), not index.html
-# ═══════════════════════════════════════════════════════════
+# RevTrailMed — Apache configuration
 
-# ── Prefer PHP entry point over any HTML file ────────────────
+# Prefer PHP entry point
 DirectoryIndex index.php
 
-# ── Disable directory listing ────────────────────────────────
-Options -Indexes -MultiViews
+# Disable directory listing
+Options -Indexes
 
-# ── Block direct access to the raw app shell and sensitive files ──
-# app.html must only be served through index.php (integrity check)
-<FilesMatch "(^app\.html$|^\.htaccess$|^\.env$|\.log$|^package(-lock)?\.json$|^vite\.config|^eslint\.config|\.map$)">
-    Order Allow,Deny
-    Deny from all
-</FilesMatch>
-
-# ── SPA routing — all requests go through index.php ──────────
+# SPA routing — all non-file requests go to index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Let the PHP entry point handle its own requests
     RewriteRule ^index\.php$ - [L]
 
-    # Serve real files and directories as-is (JS, CSS, images)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-
-    # Everything else → index.php (React Router handles client-side routes)
     RewriteRule . /index.php [L]
 </IfModule>
 
-# ── Gzip / compression ───────────────────────────────────────
+# Gzip compression
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE \
-        text/html \
-        text/plain \
-        text/css \
-        text/javascript \
-        application/javascript \
-        application/x-javascript \
-        application/json \
-        image/svg+xml \
-        font/woff \
-        font/woff2
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml
 </IfModule>
 
-# ── Browser caching ──────────────────────────────────────────
+# Cache hashed assets for 1 year
 <IfModule mod_expires.c>
     ExpiresActive On
-
-    # Hashed JS/CSS bundles — immutable, cache for 1 year
-    <FilesMatch "\.(js|css|woff|woff2|ttf|otf|eot)$">
+    <FilesMatch "\.(js|css|woff|woff2|png|jpg|jpeg|webp|gif|ico|svg)$">
         ExpiresDefault "access plus 1 year"
-        Header append Cache-Control "public, immutable"
-    </FilesMatch>
-
-    # Images — 30 days
-    <FilesMatch "\.(jpg|jpeg|png|gif|webp|ico|svg)$">
-        ExpiresDefault "access plus 30 days"
-        Header append Cache-Control "public"
     </FilesMatch>
 </IfModule>
-
-# ── Force HTTPS — uncomment when SSL certificate is installed ─
-# <IfModule mod_rewrite.c>
-#     RewriteCond %{HTTPS} off
-#     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-# </IfModule>
-
-# ── HSTS — uncomment after HTTPS is confirmed working ────────
-# <IfModule mod_headers.c>
-#     Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-# </IfModule>
